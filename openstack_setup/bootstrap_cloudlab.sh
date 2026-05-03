@@ -193,6 +193,12 @@ ensure_kali_qcow() {
     fi
     echo "    converting ${KALI_RAW} -> ${KALI_QCOW} (this may take a minute)"
     qemu-img convert -f raw -O qcow2 -c "${KALI_RAW}" "${KALI_QCOW}"
+    # Kali ships at 25 GiB virtual size, but MHBench's Terraform attacker
+    # module uses the m1.small flavor (20 GB disk). Without shrinking,
+    # Nova rejects the spawn with FlavorDiskSmallerThanImage. Actual data
+    # is ~300 MiB, so 20 GiB is plenty.
+    echo "    shrinking ${KALI_QCOW} virtual size 25G -> 20G to fit m1.small"
+    qemu-img resize --shrink "${KALI_QCOW}" 20G
     rm -f "${KALI_RAW}" "${KALI_TAR}"
 }
 
