@@ -85,6 +85,134 @@ ssh dayan@<ctl-hostname>.wisc.cloudlab.us
 
 `<ctl-hostname>` comes from the experiment's **List View** tab (e.g., `c220g2-010803`).
 
+### Use tmux for anything long-running
+
+CloudLab work should persist on the server even if your SSH session drops. Run long commands inside `tmux` on `ctl`: bootstrap retries, `compile`, large `setup` runs, snapshot export/import, and model evaluations.
+
+```bash
+tmux new -s mhbench
+
+# run the long command inside tmux
+uv run python main.py --type EquifaxSmall compile
+
+# detach without stopping it: Ctrl+B, then D
+# reattach later:
+tmux attach -t mhbench
+```
+
+For one-off background runs with logs:
+
+```bash
+tmux new-session -d -s mhbench \
+  'cd /local/mhbench && uv run python main.py --type EquifaxSmall compile 2>&1 | tee /tmp/equifax-small-compile.log'
+
+tmux attach -t mhbench
+tail -f /tmp/equifax-small-compile.log
+```
+
+### Server operating best practices
+
+Use these habits every time you connect to `ctl` or any remote experiment server:
+
+1. **Wait for CloudLab to be ready before changing anything**
+   Both `ctl` and `cp-1` should be green/ready in the CloudLab UI. If the profile installer is still running, do not install packages or run MHBench yet.
+
+   ```bash
+   ps aux | grep -E 'setup-driver|setup-controller|apt-get' | grep -v grep
+   ```
+
+2. **Run from `/local/mhbench`, not random directories**
+   `/local` is the intended working disk on CloudLab nodes. Keep the repo there and run commands from the repo root.
+
+   ```bash
+   cd /local/mhbench
+   git status --short
+   ```
+
+3. **Use `tmux` for long work**
+   Never run `compile`, large `setup`, image save/restore, or model evaluations directly in a plain SSH shell.
+
+4. **Write logs for long jobs**
+   Use `tee` so output is visible live and preserved for debugging.
+
+   ```bash
+   uv run python main.py --type EquifaxSmall compile 2>&1 | tee /tmp/equifax-small-compile.log
+   ```
+
+5. **Check existing sessions before starting a new run**
+   Avoid accidentally running two compiles against the same OpenStack project.
+
+   ```bash
+   tmux ls
+   openstack server list
+   ```
+
+6. **Treat OpenStack credentials as secrets**
+   `config/config.json`, `admin-openrc.sh`, and generated config templates contain passwords. Do not commit them or paste them into public logs.
+
+7. **Use git for persistent changes**
+   Edits made only on `ctl` disappear when the experiment ends. Commit useful script/doc fixes locally and push them to the fork, then pull on `ctl`.
+
+   ```bash
+   git pull origin main
+   ```
+
+8. **Check disk before snapshots**
+   Glance fills up during `compile`. Check it before and after large runs.
+
+   ```bash
+   df -h /var/lib/glance /local /
+   openstack image list
+   ```
+
+9. **Prefer resume flags over restarting from scratch**
+   If Ansible fails after the network is already deployed, keep the network and resume.
+
+   ```bash
+   uv run python main.py --type EquifaxSmall compile --skip_network
+   ```
+
+10. **Extend before expiry**
+    Do not let a useful CloudLab experiment expire accidentally. Extend every 5-6 days while actively working.
+
+### Preferred shell tools
+
+Use modern, boringly reliable tools. The goal is fast diagnosis without fragile parsing or lost context.
+
+| Job | Preferred tool | Notes |
+|---|---|---|
+| Search code/text | `rg` | Use `rg --files` for file discovery. Faster and cleaner than recursive `grep`. |
+| JSON | `jq` | Use for OpenStack/config output instead of `grep`/`cut` chains. |
+| YAML | `yq` | Useful for Ansible playbooks if installed. |
+| Long sessions | `tmux` | Required for compile/setup/export/import/model runs. |
+| Logs | `tee`, `tail -f`, `less +F` | Save logs while watching them live. |
+| Polling state | `watch` | Good for `openstack server list`, disk usage, service state. |
+| Server health | `df -h`, `free -h`, `uptime`, `ps`, `systemctl status` | First-pass checks before deeper debugging. |
+| Service logs | `journalctl -u <service> -f` | Use for OpenStack/systemd service failures. |
+| Copying files | `rsync -avz` | Better than repeated `scp`, especially for directories/artifacts. |
+| GitHub | `gh` | Use where authenticated locally; keep repo setup reproducible. |
+
+Useful setup on a fresh `ctl` node:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ripgrep jq tmux rsync htop
+```
+
+Optional if available:
+
+```bash
+sudo apt-get install -y fd-find bat yq
+```
+
+Rules of thumb:
+
+- Prefer structured output (`-f json` + `jq`) when available.
+- Prefer readable commands over dense pipelines when changing infrastructure.
+- Check state before action: `git status --short`, `tmux ls`, `openstack server list`, `df -h`.
+- Keep secrets out of shell history and public logs.
+- If a command will run for minutes, put it in `tmux` and log with `tee`.
+
 ### What the bootstrap script does
 
 `openstack_setup/bootstrap_cloudlab.sh` (in this repo) creates the OpenStack resources MHBench expects:

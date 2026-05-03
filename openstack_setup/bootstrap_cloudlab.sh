@@ -59,6 +59,33 @@ source "${WORKDIR}/admin-openrc.sh"
 echo "==> Authenticated as ${OS_USERNAME:-?} on ${OS_AUTH_URL:-?}"
 echo "    (project: ${OS_PROJECT_NAME:-?})"
 
+# ---------- Wait for CloudLab profile install to finish ----------
+# Running bootstrap while setup-driver.sh is still active can race with
+# OpenStack service startup, causing Nova to launch with a partial nova.conf
+# (symptom: 'Unknown auth type: None' when creating instances).
+echo "==> Wait for CloudLab OpenStack install to complete"
+WAIT_SECS=0
+while pgrep -f setup-driver.sh >/dev/null 2>&1 || pgrep -f setup-controller.sh >/dev/null 2>&1; do
+    if (( WAIT_SECS % 30 == 0 )); then
+        echo "    profile installer still running (${WAIT_SECS}s elapsed)"
+    fi
+    sleep 5
+    WAIT_SECS=$((WAIT_SECS + 5))
+    if (( WAIT_SECS > 1800 )); then
+        echo "    timed out after 30 min waiting for installer; proceeding anyway"
+        break
+    fi
+done
+echo "    installer is done"
+
+# Restart Nova so it re-reads any config that may have been written after
+# its initial start. Cheap insurance against the race condition above.
+echo "==> Restarting Nova services to pick up final config"
+sudo systemctl restart nova-api nova-conductor nova-scheduler 2>&1 | tail -2 || true
+sudo ssh -o StrictHostKeyChecking=no cp-1 "sudo systemctl restart nova-compute" 2>&1 | tail -2 || true
+sleep 5
+echo "    nova services restarted"
+
 # ---------- Terraform ----------
 # MHBench's hand-tuned environments shell out to `terraform` to deploy
 # networks. CloudLab's image doesn't ship with it.
@@ -141,43 +168,56 @@ else
 fi
 
 # ---------- Kali Linux image ----------
-# Kali's `genericcloud` tarball contains a sparse raw disk (`disk.raw`, ~25 GB
-# sparse). We convert to qcow2 to save Glance storage (~3 GB compressed).
+# We upload Kali under TWO names ("KaliLinux" for the EnvGen/Pydantic path
+# and "Kali" for the hardcoded Terraform modules). The qcow2 stays on disk
+# until both Glance entries exist, so re-runs don't re-download.
 echo "==> Kali Linux image"
-if ! have_image "${KALI_IMAGE_NAME}"; then
-    cd "${WORKDIR}"
-    KALI_TAR=$(basename "${KALI_IMAGE_URL}")
-    KALI_RAW="disk.raw"
-    KALI_QCOW="kali.qcow2"
+cd "${WORKDIR}"
+KALI_TAR=$(basename "${KALI_IMAGE_URL}")
+KALI_RAW="disk.raw"
+KALI_QCOW="kali.qcow2"
 
-    if [[ ! -f "${KALI_QCOW}" ]]; then
-        if [[ ! -f "${KALI_RAW}" ]]; then
-            if [[ ! -f "${KALI_TAR}" ]]; then
-                echo "    downloading ${KALI_IMAGE_URL}"
-                curl -fLO "${KALI_IMAGE_URL}"
-            fi
-            echo "    extracting ${KALI_TAR}"
-            tar -xf "${KALI_TAR}"
+ensure_kali_qcow() {
+    if [[ -f "${KALI_QCOW}" ]]; then return; fi
+    if [[ ! -f "${KALI_RAW}" ]]; then
+        if [[ ! -f "${KALI_TAR}" ]]; then
+            echo "    downloading ${KALI_IMAGE_URL}"
+            curl -fLO "${KALI_IMAGE_URL}"
         fi
-        # Convert sparse raw → qcow2
-        if ! command -v qemu-img >/dev/null 2>&1; then
-            echo "    installing qemu-utils for image conversion"
-            sudo apt-get install -y -q qemu-utils >/dev/null
-        fi
-        echo "    converting ${KALI_RAW} -> ${KALI_QCOW} (this may take a minute)"
-        qemu-img convert -f raw -O qcow2 -c "${KALI_RAW}" "${KALI_QCOW}"
-        rm -f "${KALI_RAW}" "${KALI_TAR}"  # reclaim ~25 GB
+        echo "    extracting ${KALI_TAR}"
+        tar -xf "${KALI_TAR}"
     fi
+    if ! command -v qemu-img >/dev/null 2>&1; then
+        echo "    installing qemu-utils for image conversion"
+        sudo apt-get install -y -q qemu-utils >/dev/null
+    fi
+    echo "    converting ${KALI_RAW} -> ${KALI_QCOW} (this may take a minute)"
+    qemu-img convert -f raw -O qcow2 -c "${KALI_RAW}" "${KALI_QCOW}"
+    rm -f "${KALI_RAW}" "${KALI_TAR}"
+}
 
-    openstack image create "${KALI_IMAGE_NAME}" \
-        --file "${KALI_QCOW}" \
-        --disk-format qcow2 \
-        --container-format bare \
-        --public
-    echo "    uploaded ${KALI_IMAGE_NAME}"
-else
-    echo "    ${KALI_IMAGE_NAME} already in Glance"
+# Upload under both names — MHBench has two code paths with different
+# expected image names.
+NEED_KALI_QCOW=0
+have_image "${KALI_IMAGE_NAME}" || NEED_KALI_QCOW=1
+have_image "Kali" || NEED_KALI_QCOW=1
+
+if (( NEED_KALI_QCOW )); then
+    ensure_kali_qcow
 fi
+
+for name in "${KALI_IMAGE_NAME}" "Kali"; do
+    if have_image "${name}"; then
+        echo "    ${name} already in Glance"
+    else
+        openstack image create "${name}" \
+            --file "${KALI_QCOW}" \
+            --disk-format qcow2 \
+            --container-format bare \
+            --public
+        echo "    uploaded ${name}"
+    fi
+done
 
 # ---------- External network ----------
 echo "==> External network"
