@@ -59,6 +59,36 @@ source "${WORKDIR}/admin-openrc.sh"
 echo "==> Authenticated as ${OS_USERNAME:-?} on ${OS_AUTH_URL:-?}"
 echo "    (project: ${OS_PROJECT_NAME:-?})"
 
+# ---------- Terraform ----------
+# MHBench's hand-tuned environments shell out to `terraform` to deploy
+# networks. CloudLab's image doesn't ship with it.
+echo "==> Terraform"
+if ! command -v terraform >/dev/null 2>&1; then
+    TF_VERSION="1.9.8"
+    cd /tmp
+    if [[ ! -f "terraform_${TF_VERSION}_linux_amd64.zip" ]]; then
+        echo "    downloading terraform ${TF_VERSION}"
+        wget -q "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+    fi
+    sudo apt-get install -y -q unzip 2>&1 | tail -1 || true
+    unzip -qo "terraform_${TF_VERSION}_linux_amd64.zip"
+    sudo mv terraform /usr/local/bin/
+    echo "    installed terraform $(terraform version | head -n1)"
+else
+    echo "    terraform already installed: $(terraform version | head -n1)"
+fi
+cd "${WORKDIR}"
+
+# ---------- uv (Python package manager) ----------
+echo "==> uv"
+if ! command -v uv >/dev/null 2>&1 && [[ ! -x "${HOME}/.local/bin/uv" ]]; then
+    echo "    installing uv"
+    curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1
+else
+    echo "    uv already installed"
+fi
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # ---------- Helpers ----------
 have_flavor()  { openstack flavor show "$1" >/dev/null 2>&1; }
 have_image()   { openstack image show "$1" >/dev/null 2>&1; }
