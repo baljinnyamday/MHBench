@@ -218,7 +218,7 @@ Rules of thumb:
 `openstack_setup/bootstrap_cloudlab.sh` (in this repo) creates the OpenStack resources MHBench expects:
 
 1. Sources the admin `openrc` from `/local/setup/admin-openrc.sh` (placed there by the CloudLab profile)
-2. Creates flavors `p2.tiny` (1 vCPU / 1 GB / 5 GB) and `m1.small` (1 vCPU / 2 GB / 20 GB)
+2. Creates flavors `p2.tiny` (1 vCPU / 1 GB / 5 GB), `m1.small` (1 vCPU / 2 GB / 20 GB), and `m1.attacker` (1 vCPU / 2 GB / 30 GB)
 3. Downloads + uploads `Ubuntu20` cloud image from cloud-images.ubuntu.com
 4. Downloads + uploads `KaliLinux` image
 5. Verifies an `external` network exists (the profile creates one — script just checks naming)
@@ -240,7 +240,7 @@ The script is idempotent — safe to re-run if a step fails.
 
 ```bash
 source /local/setup/admin-openrc.sh
-openstack flavor list                # should list p2.tiny, m1.small
+openstack flavor list                # should list p2.tiny, m1.small, m1.attacker
 openstack image list                 # should list Ubuntu20, KaliLinux
 openstack network list               # should list external
 openstack keypair list               # should list perry_key

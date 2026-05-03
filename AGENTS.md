@@ -119,4 +119,4 @@ For JSON-defined topologies:
 
 ## OpenStack expectations
 
-The deployer assumes an `external` network exists, named flavors `p2.tiny|small|medium|large`, and images `Ubuntu20` and `KaliLinux` (mapping in `src/openstack/host_deployer.py` and the Terraform modules — change both if your cluster uses different names). `openstack_setup/setup_devstack.sh` and `setup_kolla.sh` bootstrap a local cluster if needed.
+The deployer assumes an `external` network exists, named flavors `p2.tiny|small|medium|large`, `m1.small`, `m1.attacker`, and images `Ubuntu20`, `KaliLinux`, and `Kali` (mapping in `src/openstack/host_deployer.py` and the Terraform modules — change both if your cluster uses different names). `m1.attacker` is intentionally 30 GB because the current Kali genericcloud image has a 25 GiB virtual disk. `openstack_setup/setup_devstack.sh` and `setup_kolla.sh` bootstrap a local cluster if needed.

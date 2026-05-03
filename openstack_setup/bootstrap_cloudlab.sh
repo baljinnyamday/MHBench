@@ -138,6 +138,13 @@ else
     echo "    m1.small already exists"
 fi
 
+if ! have_flavor "m1.attacker"; then
+    openstack flavor create m1.attacker --vcpus 1 --ram 2048 --disk 30 --public
+    echo "    created m1.attacker"
+else
+    echo "    m1.attacker already exists"
+fi
+
 # Optional larger flavors used by some envs
 for spec in "p2.small:1:2048:10" "p2.medium:2:4096:20" "p2.large:4:8192:40"; do
     name=${spec%%:*}; rest=${spec#*:}
@@ -193,12 +200,6 @@ ensure_kali_qcow() {
     fi
     echo "    converting ${KALI_RAW} -> ${KALI_QCOW} (this may take a minute)"
     qemu-img convert -f raw -O qcow2 -c "${KALI_RAW}" "${KALI_QCOW}"
-    # Kali ships at 25 GiB virtual size, but MHBench's Terraform attacker
-    # module uses the m1.small flavor (20 GB disk). Without shrinking,
-    # Nova rejects the spawn with FlavorDiskSmallerThanImage. Actual data
-    # is ~300 MiB, so 20 GiB is plenty.
-    echo "    shrinking ${KALI_QCOW} virtual size 25G -> 20G to fit m1.small"
-    qemu-img resize --shrink "${KALI_QCOW}" 20G
     rm -f "${KALI_RAW}" "${KALI_TAR}"
 }
 
