@@ -31,6 +31,7 @@ resource "openstack_compute_instance_v2" "attacker" {
   image_name  = "Kali"
   flavor_name = "m1.attacker"
   key_pair    = var.key_name
+  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
   security_groups = [
     openstack_networking_secgroup_v2.attacker.name
   ]

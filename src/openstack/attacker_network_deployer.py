@@ -10,6 +10,7 @@ import logging
 from typing import Any, cast
 
 import openstack.connection
+from src.openstack.cloud_init import ROOT_SSH_USER_DATA
 from src.openstack.imager import get_image_name
 
 
@@ -48,7 +49,7 @@ class OpenstackAttackerNetworkDeployer:
         self.attacker_host_ip = "192.168.199.14"
         self.attacker_host_name = "attacker_host"
         self.attacker_host_image_name = "Kali"
-        self.attacker_host_flavor_name = "m1.small"
+        self.attacker_host_flavor_name = "m1.attacker"
 
         self.attacker_freedom_sg_name = "attacker_freedom"
 
@@ -237,6 +238,7 @@ class OpenstackAttackerNetworkDeployer:
             ],
             metadata={"role": "attacker", "type": "kali"},
             key_name=self.attacker_ssh_key_name,
+            user_data=ROOT_SSH_USER_DATA,
         )
 
         # Wait for instance to become active

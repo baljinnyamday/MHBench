@@ -10,6 +10,7 @@ import logging
 from typing import Any, cast
 
 import openstack.connection
+from src.openstack.cloud_init import ROOT_SSH_USER_DATA
 
 
 class OpenstackManageNetworkDeployer:
@@ -247,6 +248,7 @@ class OpenstackManageNetworkDeployer:
             ],
             metadata={"role": "management", "type": "bastion"},
             key_name=self.manage_ssh_key_name,
+            user_data=ROOT_SSH_USER_DATA,
         )
 
         # Wait for instance to become active

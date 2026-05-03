@@ -14,6 +14,7 @@ import openstack.connection
 
 from src.models import NetworkTopology, Host
 from src.models.enums import OSType, FlavorType
+from src.openstack.cloud_init import ROOT_SSH_USER_DATA
 from src.openstack.imager import get_image_name
 
 
@@ -168,6 +169,7 @@ class OpenstackHostDeployer:
             "networks": [{"uuid": network.id}],
             "security_groups": security_groups,
             "key_name": self.manage_ssh_key_name,
+            "user_data": ROOT_SSH_USER_DATA,
         }
 
         # Add fixed IP if specified
