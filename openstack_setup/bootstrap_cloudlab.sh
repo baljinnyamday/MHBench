@@ -111,22 +111,34 @@ else
 fi
 
 # ---------- Kali Linux image ----------
+# Kali's `genericcloud` tarball contains a sparse raw disk (`disk.raw`, ~25 GB
+# sparse). We convert to qcow2 to save Glance storage (~3 GB compressed).
 echo "==> Kali Linux image"
 if ! have_image "${KALI_IMAGE_NAME}"; then
     cd "${WORKDIR}"
     KALI_TAR=$(basename "${KALI_IMAGE_URL}")
+    KALI_RAW="disk.raw"
     KALI_QCOW="kali.qcow2"
+
     if [[ ! -f "${KALI_QCOW}" ]]; then
-        if [[ ! -f "${KALI_TAR}" ]]; then
-            echo "    downloading ${KALI_IMAGE_URL}"
-            curl -fLO "${KALI_IMAGE_URL}"
+        if [[ ! -f "${KALI_RAW}" ]]; then
+            if [[ ! -f "${KALI_TAR}" ]]; then
+                echo "    downloading ${KALI_IMAGE_URL}"
+                curl -fLO "${KALI_IMAGE_URL}"
+            fi
+            echo "    extracting ${KALI_TAR}"
+            tar -xf "${KALI_TAR}"
         fi
-        echo "    extracting ${KALI_TAR}"
-        tar -xf "${KALI_TAR}"
-        # The archive contains a single .qcow2 — find and rename it
-        extracted=$(find . -maxdepth 2 -name '*.qcow2' | head -n1)
-        mv "${extracted}" "${KALI_QCOW}"
+        # Convert sparse raw → qcow2
+        if ! command -v qemu-img >/dev/null 2>&1; then
+            echo "    installing qemu-utils for image conversion"
+            sudo apt-get install -y -q qemu-utils >/dev/null
+        fi
+        echo "    converting ${KALI_RAW} -> ${KALI_QCOW} (this may take a minute)"
+        qemu-img convert -f raw -O qcow2 -c "${KALI_RAW}" "${KALI_QCOW}"
+        rm -f "${KALI_RAW}" "${KALI_TAR}"  # reclaim ~25 GB
     fi
+
     openstack image create "${KALI_IMAGE_NAME}" \
         --file "${KALI_QCOW}" \
         --disk-format qcow2 \
