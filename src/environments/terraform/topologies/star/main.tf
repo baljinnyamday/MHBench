@@ -41,7 +41,7 @@ resource "openstack_compute_instance_v2" "ring_host" {
   image_name  = "Ubuntu20"
   flavor_name = "p2.tiny"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
   security_groups = [
     module.perry_manager.talk_to_manage_name,
     openstack_networking_secgroup_v2.employee_one_group.name

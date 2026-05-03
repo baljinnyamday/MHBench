@@ -232,7 +232,7 @@ resource "openstack_compute_instance_v2" "manage_host" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.manage_port_host.id
@@ -254,7 +254,7 @@ resource "openstack_compute_instance_v2" "webserver_A" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.webserver_A_port.id
@@ -266,7 +266,7 @@ resource "openstack_compute_instance_v2" "webserver_B" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.webserver_B_port.id
@@ -278,7 +278,7 @@ resource "openstack_compute_instance_v2" "webserver_C" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.webserver_C_port.id
@@ -291,7 +291,7 @@ resource "openstack_compute_instance_v2" "employee_A" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.employee_A_port.id
@@ -303,7 +303,7 @@ resource "openstack_compute_instance_v2" "employee_B" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.employee_B_port.id
@@ -315,7 +315,7 @@ resource "openstack_compute_instance_v2" "database_A" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.database_A_port.id
@@ -327,7 +327,7 @@ resource "openstack_compute_instance_v2" "database_B" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.database_B_port.id
@@ -340,7 +340,7 @@ resource "openstack_compute_instance_v2" "attacker" {
   image_name  = "ubuntu20_pip"
   flavor_name = "m1.small"
   key_pair    = var.perry_key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
 
   network {
     port = openstack_networking_port_v2.attacker_port.id

@@ -61,7 +61,7 @@ resource "openstack_compute_instance_v2" "manage_host" {
   image_name  = "Ubuntu20"
   flavor_name = "m1.small"
   key_pair    = var.key_name
-  user_data = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
+  user_data   = "#cloud-config\ndisable_root: false\nssh_pwauth: false\n"
   security_groups = [
     openstack_networking_secgroup_v2.talk_to_manage.name,
     openstack_networking_secgroup_v2.manage_freedom.name
