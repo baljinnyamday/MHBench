@@ -16,9 +16,10 @@ set -euo pipefail
 UBUNTU20_IMAGE_URL="https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img"
 UBUNTU20_IMAGE_NAME="Ubuntu20"
 
-# Kali official cloud image (Generic Cloud, qcow2). Update the version when
-# Kali rotates the image; the URL pattern is stable.
-KALI_IMAGE_URL="https://kali.download/cloud-images/kali-2024.4/kali-linux-2024.4-cloud-generic-amd64.tar.xz"
+# Kali official cloud image. Use `current/` to always get the latest release;
+# Kali drops old versions from the mirror, so pinning a version is brittle.
+# The archive contains a single qcow2 file.
+KALI_IMAGE_URL="https://kali.download/cloud-images/current/kali-linux-2026.1-cloud-genericcloud-amd64.tar.xz"
 KALI_IMAGE_NAME="KaliLinux"
 
 KEY_NAME="perry_key"
